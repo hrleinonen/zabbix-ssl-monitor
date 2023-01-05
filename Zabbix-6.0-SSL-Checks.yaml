@@ -1,0 +1,155 @@
+zabbix_export:
+  version: '6.0'
+  date: '2023-01-05T07:19:47Z'
+  groups:
+    -
+      uuid: f2481361f99448eea617b7b1d4765566
+      name: 'Discovered hosts'
+    -
+      uuid: a571c0d144b14fd4a87a9d9b2aa9fcd6
+      name: Templates/Applications
+  templates:
+    -
+      uuid: 531755d94048466bb548e4d8965c47ab
+      template: 'SSL Server Discovery'
+      name: 'SSL Servers'
+      description: 'Discovery SSL certificates from hosts.'
+      groups:
+        -
+          name: Templates/Applications
+      discovery_rules:
+        -
+          uuid: 30c361c72b844954a5d03861f2cd237a
+          name: 'SSL-server Discovery'
+          type: EXTERNAL
+          key: 'ssl_discovery.sh[sslserver.discovery]'
+          delay: 1h
+          host_prototypes:
+            -
+              uuid: d94e35a5aacd4df9a0ad39db9246d362
+              host: 'SSL-Server {#SSLSERVER}'
+              name: 'SSL-Server {#SSLSERVER}'
+              group_links:
+                -
+                  group:
+                    name: 'Discovered hosts'
+              templates:
+                -
+                  name: 'SSL Server Status'
+              macros:
+                -
+                  macro: '{$SSLPORT}'
+                  value: '{#SSLPORT}'
+                -
+                  macro: '{$SSLSERVER}'
+                  value: '{#SSLSERVER}'
+              tags:
+                -
+                  tag: Application
+                  value: 'HTTPS Service'
+              custom_interfaces: 'YES'
+              interfaces:
+                - {  }
+          lld_macro_paths:
+            -
+              lld_macro: '{#SSLPORT}'
+              path: $.sslport
+            -
+              lld_macro: '{#SSLSERVER}'
+              path: $.sslserver
+          preprocessing:
+            -
+              type: JSONPATH
+              parameters:
+                - '$.SSLSERVERS[*]'
+    -
+      uuid: b4b05210aa72406f97010bac6ab49989
+      template: 'SSL Server Status'
+      name: 'SSL Server Status'
+      description: 'Get certificates status data.'
+      groups:
+        -
+          name: Templates/Applications
+      items:
+        -
+          uuid: d448c50bda99417c863f8d9f148df54f
+          name: 'Certificate lifetime'
+          type: EXTERNAL
+          key: 'ssl_check.sh["{$SSLSERVER}", "{$SSLPORT}", "expire_days"]'
+          delay: 1h
+          history: 30d
+          trends: '0'
+          value_type: FLOAT
+          units: Days
+          tags:
+            -
+              tag: Application
+              value: 'SSL Checks'
+          triggers:
+            -
+              uuid: 1233c2b52ba44d659e5fbea33a701eb9
+              expression: 'last(/SSL Server Status/ssl_check.sh["{$SSLSERVER}", "{$SSLPORT}", "expire_days"])<=1'
+              name: 'Certificate lifetime is under 1 day.'
+              opdata: 'Current remaining time {ITEM.LASTVALUE1}'
+              priority: DISASTER
+              manual_close: 'YES'
+            -
+              uuid: 32d3768f31b943cc99b08ea004d6525c
+              expression: 'last(/SSL Server Status/ssl_check.sh["{$SSLSERVER}", "{$SSLPORT}", "expire_days"])<=15'
+              name: 'Certificate lifetime is under 15 days.'
+              opdata: 'Current remaining time {ITEM.LASTVALUE1}'
+              priority: HIGH
+              manual_close: 'YES'
+            -
+              uuid: 98ee55a334a44e8c8b7e6e92f49f2008
+              expression: 'last(/SSL Server Status/ssl_check.sh["{$SSLSERVER}", "{$SSLPORT}", "expire_days"])<=45'
+              name: 'Certificate lifetime is under 45 days.'
+              opdata: 'Current remaining time {ITEM.LASTVALUE1}'
+              priority: AVERAGE
+              manual_close: 'YES'
+            -
+              uuid: f56ec58877424325a4386215911cb081
+              expression: 'last(/SSL Server Status/ssl_check.sh["{$SSLSERVER}", "{$SSLPORT}", "expire_days"])<=60'
+              name: 'Certificate lifetime is under 60 days.'
+              opdata: 'Current remaining time {ITEM.LASTVALUE1}'
+              priority: WARNING
+              manual_close: 'YES'
+        -
+          uuid: d9e5008fbfb346d6a746b68cb3065697
+          name: 'Certificate serial'
+          type: EXTERNAL
+          key: 'ssl_check.sh["{$SSLSERVER}", "{$SSLPORT}", "serial"]'
+          delay: 1h
+          history: 30d
+          trends: '0'
+          value_type: TEXT
+          tags:
+            -
+              tag: Application
+              value: 'SSL Checks'
+        -
+          uuid: 9a2b78efcc8841a1a29221bdd703f39a
+          name: 'Certificate issuer'
+          type: EXTERNAL
+          key: 'ssl_check.sh["{$SSLSERVER}", "{$SSLPORT}", "ssl_issuer"]'
+          delay: 1h
+          history: 30d
+          trends: '0'
+          value_type: TEXT
+          tags:
+            -
+              tag: Application
+              value: 'SSL Checks'
+        -
+          uuid: c33395fa9e1743609a6aee78833b8191
+          name: 'Certificate subject'
+          type: EXTERNAL
+          key: 'ssl_check.sh["{$SSLSERVER}", "{$SSLPORT}", "ssl_subject"]'
+          delay: 1h
+          history: 30d
+          trends: '0'
+          value_type: TEXT
+          tags:
+            -
+              tag: Application
+              value: 'SSL Checks'
